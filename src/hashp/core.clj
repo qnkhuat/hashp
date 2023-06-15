@@ -45,7 +45,7 @@
               (println
                 (str prefix-p
                      (color/sgr (trace-str (current-stacktrace)) :green) " => "
-                     t(puget/pprint-str ~result-sym print-opts)))
+                     (puget/pprint-str ~result-sym print-opts)))
               ~result-sym)
        :cljs (do
                (println
