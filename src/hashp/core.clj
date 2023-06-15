@@ -26,7 +26,8 @@
 
 (def lock (Object.))
 
-(def prefix (color/sgr "#p" :red))
+(def prefix-p (color/sgr "#p" :red))
+(def prefix-pp (color/sgr "#pp" :red))
 
 (def print-opts
   (merge puget/*options*
@@ -35,22 +36,41 @@
           :color-scheme
           {:nil [:bold :blue]}}))
 
-(defn p* [form]
+(defn p*
+  "Only print the line and func name + result"
+  [form]
+  `(let [~result-sym ~form]
+     (macrovich/case
+       :clj (locking lock
+              (println
+                (str prefix-p
+                     (color/sgr (trace-str (current-stacktrace)) :green) " "
+                     " => "
+                     (puget/pprint-str ~result-sym print-opts)))
+              ~result-sym)
+       :cljs (do
+               (println
+                 (str prefix-p " => " (zprint/zprint-str ~result-sym print-opts)))
+               ~result-sym))))
+
+(defn pp*
+  "The original hasp that print both the form and its result"
+  [form]
   (let [orig-form (walk/postwalk hide-p-form form)]
     `(let [~result-sym ~form]
        (macrovich/case
          :clj (locking lock
                 (println
-                 (str prefix
-                      (color/sgr (trace-str (current-stacktrace)) :green) " "
-                      (when-not (= ~result-sym '~orig-form)
-                        (str (puget/pprint-str '~orig-form print-opts) " => "))
-                      (puget/pprint-str ~result-sym print-opts)))
+                  (str prefix-pp
+                       (color/sgr (trace-str (current-stacktrace)) :green) " "
+                       (when-not (= ~result-sym '~orig-form)
+                         (str (puget/pprint-str '~orig-form print-opts) " => "))
+                       (puget/pprint-str ~result-sym print-opts)))
                 ~result-sym)
          :cljs (do
                  (println
-                  (str prefix " "
-                       (when-not (= ~result-sym '~orig-form)
-                         (str (zprint/zprint-str '~orig-form print-opts) " => "))
-                       (zprint/zprint-str ~result-sym print-opts)))
+                   (str prefix-pp " "
+                        (when-not (= ~result-sym '~orig-form)
+                          (str (zprint/zprint-str '~orig-form print-opts) " => "))
+                        (zprint/zprint-str ~result-sym print-opts)))
                  ~result-sym)))))
